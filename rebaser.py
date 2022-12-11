@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 
 import dataclasses
+import json
 import subprocess
 import urllib.request
 from enum import Enum
@@ -33,10 +34,16 @@ class Remote:
             return f"{self.fetch}/{name}.git"
 
 
+class RemoteForSingleProject(Remote):
+    def url_for(self, name: str) -> str:
+        return self.fetch
+
+
 @dataclasses.dataclass
 class Project:
     path: str
     name: str
+    remote: Remote | None
 
 
 @lru_cache(maxsize=None)
@@ -128,9 +135,12 @@ def get_kenvyra_projects() -> list[Project]:
         upstream_path = os.path.join(path, ".upstream")
         if os.path.exists(upstream_path):
             with open(upstream_path, "r") as file:
-                name = file.read().strip()
+                remote_json = json.load(file)
+            remote = RemoteForSingleProject(**remote_json)
+        else:
+            remote = None
 
-        projects.append(Project(path=path, name=name))
+        projects.append(Project(path=path, name=name, remote=remote))
 
     return projects
 
@@ -174,7 +184,7 @@ def main() -> None:
     print("Rebasing manifest on ArrowOS")
 
     match rebase(
-        project=Project(path=".repo/manifests", name="android_manifest"),
+        project=Project(path=".repo/manifests", name="android_manifest", remote=None),
         remote=arrow,
         kenvyra=kenvyra,
     ):
@@ -195,29 +205,30 @@ def main() -> None:
     projects = get_kenvyra_projects()
 
     for project in projects:
-        print(f"Guessing upstream for {project.name}")
+        if not project.remote:
+            print(f"Guessing upstream for {project.name}")
 
-        upstream = None
+            for remote in possible_upstreams:
+                try:
+                    with urllib.request.urlopen(remote.url_for(project.name)):
+                        project.remote = remote
+                        break
+                except:
+                    continue
 
-        for remote in possible_upstreams:
-            try:
-                with urllib.request.urlopen(remote.url_for(project.name)):
-                    upstream = remote
-                    break
-            except:
-                continue
-
-        if upstream:
-            print(f"Found upstream {upstream.name} for {project.name}")
-            match rebase(project=project, remote=remote, kenvyra=kenvyra):
+        if project.remote:
+            print(f"Found upstream {project.remote.name} for {project.name}")
+            match rebase(project=project, remote=project.remote, kenvyra=kenvyra):
                 case RebaseResult.Success:
                     print(
-                        green(f"Successfully rebased {project.name} on {upstream.name}")
+                        green(
+                            f"Successfully rebased {project.name} on {project.remote.name}"
+                        )
                     )
                 case RebaseResult.Failed:
                     print(
                         red(
-                            f"Failed to rebase {project.name} on {upstream.name}. Please fix manually and run again!"
+                            f"Failed to rebase {project.name} on {project.remote.name}. Please fix manually and run again!"
                         )
                     )
                 case RebaseResult.NothingToDo:
