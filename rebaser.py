@@ -97,7 +97,7 @@ def rebase(*, project: Project, remote: Remote, kenvyra: Remote) -> RebaseResult
                 f"Failed to rebase {project.path} onto {remote}. Git told me:\n{result.stderr}\nPlease resolve manually!"
             )
         )
-        return False
+        return RebaseResult.Failed
     elif b"up to date" in result.stdout:
         return RebaseResult.NothingToDo
 
