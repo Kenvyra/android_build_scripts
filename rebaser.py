@@ -23,11 +23,14 @@ class RebaseResult(Enum):
 
 @dataclasses.dataclass
 class Remote:
-    fetch: str
-    revision: str
     name: str
+    fetch: str | None = None
+    revision: str | None = None
 
     def url_for(self, name: str) -> str:
+        if self.name == "aosp":
+            name = name.replace("_", "/").replace("android", "platform")
+
         if self.fetch.endswith("/"):
             return f"{self.fetch}{name}.git"
         else:
@@ -215,6 +218,11 @@ def main() -> None:
                         break
                 except:
                     continue
+
+        elif project.remote.name == "aosp":
+            # AOSP revisions change so often, we will just set the remote to AOSP if forced
+            # That way, a .upstream can only contain a name key
+            project.remote = aosp
 
         if project.remote:
             print(f"Found upstream {project.remote.name} for {project.name}")
