@@ -46,6 +46,7 @@ podman run \
 	-e BUILDER_EMAIL="dev@kenvyra.xyz" \
 	-e USE_CCACHE=1 \
 	-e CCACHE_DIR="/tmp/kenvyra_ccache" \
+	-e CCACHE_EXEC="/usr/bin/ccache" \
 	-e HOME="/build" \
 	kenvyra:latest \
 	"$@"
