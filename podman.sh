@@ -40,6 +40,7 @@ podman run \
 	--hostname $(hostname) \
 	--mount type=tmpfs,tmpfs-size=1G,destination=/build \
 	-v $(pwd):/aosp-src \
+	-v $(pwd)/out:/aosp-src/out \
 	-v /tmp/kenvyra_ccache:/tmp/kenvyra_ccache \
 	-e BUILDER_USER="kenvyra" \
 	-e BUILDER_EMAIL="dev@kenvyra.xyz" \
