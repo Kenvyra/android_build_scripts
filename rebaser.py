@@ -33,6 +33,8 @@ class Remote:
     def url_for(self, name: str) -> str:
         if self.name == "aosp":
             name = name.replace("_", "/").replace("android", "platform")
+            # Hack for special case
+            name = name.replace("platform/testing", "platform_testing")
 
         if self.fetch.endswith("/"):
             return f"{self.fetch}{name}.git"
