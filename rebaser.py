@@ -231,17 +231,16 @@ def main() -> None:
     print("Rebasing manifest on LineageOS")
 
     match rebase(
-        project=Project(
+        Project(
             path=".repo/manifests",
             name="android_manifest",
-            remote=None,
-        ),
-        remote=RemoteForSingleProject(
-            name="lineage",
-            fetch="https://github.com/LineageOS/android",
-            revision="refs/heads/lineage-20.0",
-        ),
-        kenvyra=kenvyra,
+            remote=RemoteForSingleProject(
+                name="lineage",
+                fetch="https://github.com/LineageOS/android",
+                revision="refs/heads/lineage-20.0",
+            ),
+            kenvyra=kenvyra,
+        )
     ):
         case RebaseResult.Success:
             print(green("Manifest successfully rebased"))
