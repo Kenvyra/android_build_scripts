@@ -152,7 +152,7 @@ def rebase(project: Project) -> RebaseResult:
 def get_kenvyra_projects() -> Iterator[Project]:
     for file in glob(".repo/manifests/**/*.xml", recursive=True):
         # Device trees should be updated manually
-        if file.endswith("devices.xml"):
+        if "devices" in file:
             continue
 
         tree = parse(file)
