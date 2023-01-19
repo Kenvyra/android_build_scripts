@@ -10,6 +10,7 @@ RUN microdnf install -y \
 	automake \
 	autoconf \
 	binutils \
+	diffutils \
 	flex \
 	gcc \
 	gcc-c++ \
