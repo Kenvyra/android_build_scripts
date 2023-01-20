@@ -47,7 +47,6 @@ podman run \
 	-e USE_CCACHE=1 \
 	-e CCACHE_DIR="/tmp/kenvyra_ccache" \
 	-e CCACHE_EXEC="/usr/bin/ccache" \
-	-e GLOBAL_THINLTO=true \
 	-e HOME="/build" \
 	kenvyra:latest \
 	"$@"
