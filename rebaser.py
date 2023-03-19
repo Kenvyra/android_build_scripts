@@ -5,6 +5,7 @@ from typing import Iterator
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "utils"))
 
+import copy
 import dataclasses
 import json
 import subprocess
@@ -33,8 +34,13 @@ class Remote:
     def url_for(self, name: str) -> str:
         if self.name == "aosp":
             name = name.replace("_", "/").replace("android", "platform")
-            # Hack for special case
-            name = name.replace("platform/testing", "platform_testing")
+            # Hack for special cases
+            name = (
+                name.replace("platform/testing", "platform_testing")
+                .replace("dynamic/depth", "dynamic_depth")
+                .replace("image/io", "image_io")
+                .replace("v4l2/codec2", "v4l2_codec2")
+            )
 
         if self.fetch.endswith("/"):
             return f"{self.fetch}{name}.git"
@@ -44,8 +50,13 @@ class Remote:
     def url_for_revision(self, name: str) -> str:
         if self.name == "aosp":
             name = name.replace("_", "/").replace("android", "platform")
-            # Hack for special case
-            name = name.replace("platform/testing", "platform_testing")
+            # Hack for special cases
+            name = (
+                name.replace("platform/testing", "platform_testing")
+                .replace("dynamic/depth", "dynamic_depth")
+                .replace("image/io", "image_io")
+                .replace("v4l2/codec2", "v4l2_codec2")
+            )
 
         if self.fetch.endswith("/"):
             base = f"{self.fetch}{name}"
@@ -168,6 +179,11 @@ def get_kenvyra_projects() -> Iterator[Project]:
             name = elem.attrib["name"]
 
             upstream_path = os.path.join(path, ".upstream")
+            skip_path = os.path.join(path, ".skip")
+
+            if os.path.exists(skip_path):
+                continue
+
             if os.path.exists(upstream_path):
                 with open(upstream_path, "r") as file:
                     remote_json = json.load(file)
@@ -177,6 +193,8 @@ def get_kenvyra_projects() -> Iterator[Project]:
 
             if elem.attrib["remote"] == "kenvyra":
                 kenvyra = get_kenvyra()
+                if revision := elem.attrib.get("revision"):
+                    kenvyra.revision = revision
             else:
                 kenvyra = get_kenvyra_gitlab()
 
@@ -265,11 +283,28 @@ def main() -> None:
             print(f"Guessing upstream for {project.name}")
 
             for remote in possible_upstreams:
+                reset_revision = False
+                if (
+                    remote.name == "lineage"
+                    and project.kenvyra.revision != kenvyra.revision
+                ):
+                    # qcom-caf repos have different branch naming
+                    previous_revision = remote.revision
+                    remote.revision = project.kenvyra.revision.replace(
+                        kenvyra.revision.removeprefix("refs/heads/"),
+                        lineage.revision.removeprefix("refs/heads/"),
+                    )
+                    reset_revision = True
+                url = remote.url_for_revision(project.name)
                 try:
                     with urllib.request.urlopen(remote.url_for_revision(project.name)):
-                        project.remote = remote
+                        project.remote = copy.copy(remote)
+                        if reset_revision:
+                            remote.revision = previous_revision
                         break
                 except:
+                    if reset_revision:
+                        remote.revision = previous_revision
                     continue
 
         elif project.remote.name == "aosp":
