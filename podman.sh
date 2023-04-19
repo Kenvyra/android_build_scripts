@@ -1,13 +1,13 @@
 #!/usr/bin/env sh
 DIRECTORY=$(dirname $0)
 
-if ! command -v podman &> /dev/null
+if ! [ -x "$(command -v podman)" ]
 then
     echo "podman is not installed. Install it to use this script!"
     exit 1
 fi
 
-if ! command -v ccache &> /dev/null
+if ! [ -x "$(command -v ccache)" ]
 then
     echo "ccache is not installed. Install it to use this script!"
     exit 1
@@ -17,6 +17,11 @@ if [ ! -d /tmp/kenvyra_ccache ]
 then
     mkdir -p /tmp/kenvyra_ccache
     CCACHE_DIR=/tmp/kenvyra_ccache ccache -M 100GB
+fi
+
+if [ ! -d out ]
+then
+    mkdir out
 fi
 
 KENVYRA_IMAGE=$(podman images | grep kenvyra)
